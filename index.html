@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Target Grade Calculator</title>
+<style>
+    :root {
+        --bg-color: #121212;
+        --card-bg: #1e1e1e;
+        --text-color: #e0e0e0;
+        --border-color: #333;
+        --primary: #0d6efd;
+        --success: #198754;
+        --danger: #dc3545;
+        --input-bg: #2d2d2d;
+    }
+
+    body {
+        font-family: system-ui, -apple-system, sans-serif;
+        margin: 30px auto;
+        max-width: 1300px;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+    }
+
+    .layout-container {
+        display: flex;
+        gap: 30px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .card {
+        background-color: var(--card-bg);
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--border-color);
+    }
+
+    .calculator-section {
+        flex: 2;
+        min-width: 500px;
+    }
+
+    .expected-section {
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .subject-row, .expected-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 15px;
+        align-items: center;
+        background: #252525;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #2a2a2a;
+    }
+
+    input[type="text"], input[type="number"] {
+        padding: 10px;
+        background-color: var(--input-bg);
+        color: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        color-scheme: dark;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    input[type="range"] {
+        flex: 2;
+        cursor: pointer;
+        accent-color: var(--primary);
+    }
+
+    input::placeholder {
+        color: #888;
+    }
+
+    button {
+        padding: 10px 16px;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        white-space: nowrap;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transition: all 0.2s ease;
+    }
+
+    button.remove {
+        background-color: var(--danger);
+        padding: 10px 14px;
+    }
+
+    button:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+
+    .controls {
+        margin: 25px 0 10px 0;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        gap: 10px;
+    }
+
+    #result {
+        margin-top: 25px;
+        padding: 20px;
+        background-color: #252525;
+        border-left: 5px solid var(--primary);
+        border-radius: 0 8px 8px 0;
+        line-height: 1.6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .error {
+        border-left-color: var(--danger) !important;
+    }
+
+    h2, h3 {
+        margin-top: 0;
+        font-weight: 600;
+        letter-spacing: -0.5px;
+    }
+
+    .label-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+    }
+    
+    .label-group.wide { flex: 2; }
+</style>
+</head>
+<body>
+
+    <div class="layout-container">
+        <div class="card calculator-section">
+            <h2>Target Grade Calculator</h2>
+            
+            <div style="margin-bottom: 25px;">
+                <label style="display: flex; align-items: center; gap: 10px;">
+                    <strong>Target Percentage (%):</strong> 
+                    <input type="number" id="targetPercent" value="90" min="0" max="100" step="0.1" style="width: 100px;">
+                </label>
+            </div>
+
+            <div id="subjectsContainer"></div>
+
+            <div class="controls">
+                <button onclick="addSubject()">+ Add Subject</button>
+                <button onclick="calculate()" style="background-color: var(--success);">Calculate Requirement</button>
+            </div>
+
+            <div id="result" style="display: none;"></div>
+        </div>
+
+        <div class="card expected-section">
+            <h3>Expected Scores</h3>
+            <div id="expectedContainer"></div>
+            <div class="controls" style="border: none; padding-top: 0; margin-top: 15px;">
+                <button onclick="addExpected()">+ Add Expected Score</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- Core Calculator Logic ---
+    function addSubject(name = '', scored = '', max = '100') {
+        const container = document.getElementById('subjectsContainer');
+        const row = document.createElement('div');
+        row.className = 'subject-row';
+        
+        row.innerHTML = `
+            <div class="label-group wide">
+                <input type="text" class="subj-name" placeholder="Subject Name" value="${name}">
+            </div>
+            <div class="label-group">
+                <input type="number" class="scored" placeholder="Scored" value="${scored}" step="0.5" min="0">
+            </div>
+            <input type="range" class="scored-slider" value="${scored || 0}" step="0.5" min="0" max="${max}">
+            <span style="color: #888;">/</span>
+            <div class="label-group">
+                <input type="number" class="max" placeholder="Max" value="${max}" min="1" step="0.5" required>
+            </div>
+            <button class="remove" onclick="this.parentElement.remove(); saveData();">X</button>
+        `;
+        
+        container.appendChild(row);
+        setupRowSync(row);
+        saveData();
+    }
+
+    function setupRowSync(row) {
+        const scoredNum = row.querySelector('.scored');
+        const scoredSlider = row.querySelector('.scored-slider');
+        const maxNum = row.querySelector('.max');
+
+        // Sync Number Input -> Slider
+        scoredNum.addEventListener('input', () => {
+            if (scoredNum.value !== '') {
+                scoredSlider.value = scoredNum.value;
+            }
+        });
+
+        // Sync Slider -> Number Input
+        scoredSlider.addEventListener('input', () => {
+            scoredNum.value = scoredSlider.value;
+            saveData(); // Save instantly on drag
+        });
+
+        // Sync Max Input -> Slider Max Value
+        maxNum.addEventListener('input', () => {
+            const maxVal = parseFloat(maxNum.value) || 100;
+            scoredSlider.max = maxVal;
+            if (parseFloat(scoredNum.value) > maxVal) {
+                scoredNum.value = maxVal;
+                scoredSlider.value = maxVal;
+            }
+        });
+    }
+
+    function calculate() {
+        const targetPercent = parseFloat(document.getElementById('targetPercent').value);
+        const rows = document.querySelectorAll('.subject-row');
+        
+        if (isNaN(targetPercent)) return showResult("Please enter a valid target percentage.", true);
+
+        let totalMax = 0, currentScored = 0, remainingMax = 0, pendingSubjects = 0;
+
+        for (let row of rows) {
+            const maxInput = parseFloat(row.querySelector('.max').value);
+            const scoredInput = row.querySelector('.scored').value;
+
+            if (isNaN(maxInput) || maxInput <= 0) return showResult("All subjects must have a valid maximum mark > 0.", true);
+
+            totalMax += maxInput;
+
+            if (scoredInput.trim() !== "") {
+                const scored = parseFloat(scoredInput);
+                if (scored > maxInput) return showResult("Scored marks cannot exceed maximum marks.", true);
+                currentScored += scored;
+            } else {
+                remainingMax += maxInput;
+                pendingSubjects++;
+            }
+        }
+
+        if (totalMax === 0) return showResult("Add at least one subject.", true);
+
+        const targetMarksTotal = totalMax * (targetPercent / 100);
+        const marksNeeded = targetMarksTotal - currentScored;
+
+        if (pendingSubjects === 0) {
+            const currentPercent = (currentScored / totalMax) * 100;
+            return showResult(`All subjects completed. Final Percentage: <strong>${currentPercent.toFixed(2)}%</strong>`);
+        }
+
+        if (marksNeeded <= 0) return showResult("Target mathematically guaranteed based on current scores.");
+        if (marksNeeded > remainingMax) return showResult(`<strong>Target Impossible.</strong><br>Need ${marksNeeded.toFixed(2)} more marks; only ${remainingMax} available.`, true);
+
+        const requiredPercentInRemaining = (marksNeeded / remainingMax) * 100;
+        
+        showResult(`
+            <strong>Analysis:</strong><br>
+            Total Marks Available Overall: ${totalMax}<br>
+            Target Marks Needed Overall: ${targetMarksTotal.toFixed(2)}<br>
+            Current Marks Scored: ${currentScored}<br>
+            <br>
+            <strong>Requirement:</strong><br>
+            You need <strong>${marksNeeded.toFixed(2)}</strong> more marks out of the remaining <strong>${remainingMax}</strong> available marks.<br>
+            This requires averaging <strong>${requiredPercentInRemaining.toFixed(2)}%</strong> across your pending subjects.
+        `);
+    }
+
+    function showResult(htmlMessage, isError = false) {
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = htmlMessage;
+        resultDiv.className = isError ? 'error' : '';
+    }
+
+    // --- Expected Scores Logic ---
+    function addExpected(name = '', score = '') {
+        const container = document.getElementById('expectedContainer');
+        const row = document.createElement('div');
+        row.className = 'expected-row';
+        row.innerHTML = `
+            <input type="text" class="exp-name" placeholder="Subject" value="${name}" style="flex: 2;">
+            <input type="number" class="exp-score" placeholder="Expected Score" value="${score}" step="0.5" style="flex: 1;">
+            <button class="remove" onclick="this.parentElement.remove(); saveData();">X</button>
+        `;
+        container.appendChild(row);
+        saveData();
+    }
+
+    // --- Local Storage Logic ---
+    function saveData() {
+        const data = {
+            targetPercent: document.getElementById('targetPercent').value,
+            subjects: Array.from(document.querySelectorAll('.subject-row')).map(row => ({
+                name: row.querySelector('.subj-name').value,
+                scored: row.querySelector('.scored').value,
+                max: row.querySelector('.max').value
+            })),
+            expected: Array.from(document.querySelectorAll('.expected-row')).map(row => ({
+                name: row.querySelector('.exp-name').value,
+                score: row.querySelector('.exp-score').value
+            }))
+        };
+        localStorage.setItem('gradeData', JSON.stringify(data));
+    }
+
+    function loadData() {
+        const savedData = localStorage.getItem('gradeData');
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            document.getElementById('targetPercent').value = data.targetPercent || 90;
+            
+            if (data.subjects && data.subjects.length > 0) {
+                data.subjects.forEach(sub => addSubject(sub.name, sub.scored, sub.max));
+            } else {
+                initializeDefaultRows();
+            }
+
+            if (data.expected && data.expected.length > 0) {
+                data.expected.forEach(exp => addExpected(exp.name, exp.score));
+            } else {
+                addExpected();
+            }
+        } else {
+            initializeDefaultRows();
+            addExpected();
+        }
+    }
+
+    function initializeDefaultRows() {
+        addSubject();
+        addSubject();
+        addSubject();
+    }
+
+    // Initialize and attach auto-save listeners
+    window.onload = loadData;
+    document.addEventListener('input', (e) => {
+        // Only trigger global save if it wasn't a slider (sliders save locally to avoid lag)
+        if (!e.target.classList.contains('scored-slider')) {
+            saveData();
+        }
+    });
+
+</script>
+</body>
+</html>
